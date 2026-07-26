@@ -1,0 +1,26 @@
+{
+  "name": "froententagent",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@stomp/stompjs": "^7.3.0",
+    "axios": "^1.18.1",
+    "lucide-react": "^1.26.0",
+    "net": "^1.0.2",
+    "sockjs-client": "^1.6.1",
+    "stompjs": "^2.3.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.4",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "vite": "^8.1.5"
+  }
+}
