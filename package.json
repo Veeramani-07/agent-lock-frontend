@@ -18,10 +18,11 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "sockjs-client": "^1.6.1",
-    "stompjs": "^2.3.3",
+    "stompjs": "^2.3.3"
+  },
+  "devDependencies": {
     "vite": "^8.1.5"
   },
-  "devDependencies": {},
   "engines": {
     "node": ">=18"
   }
