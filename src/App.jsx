@@ -4,17 +4,47 @@ import { Client } from '@stomp/stompjs';
 
 const BASE_URL = "https://agent-lock-backend.onrender.com";
 
+// Initial logs for instant visual feedback on page load
+const FALLBACK_LOGS = [
+    {
+        commandId: 'CMD_101',
+        agentName: 'Codex-Refactor-Bot',
+        command: 'git push origin main --force',
+        riskScore: 85,
+        status: 'PAUSED',
+        feedbackPrompt: 'Waiting for supervisor review...'
+    },
+    {
+        commandId: 'CMD_100',
+        agentName: 'Data-Sync-Agent',
+        command: 'SELECT * FROM users LIMIT 10',
+        riskScore: 12,
+        status: 'APPROVED_AUTO',
+        feedbackPrompt: 'Safe execution'
+    }
+];
+
 const AgentDashboard = () => {
     const [actions, setActions] = useState([]);
     const [selectedCmdId, setSelectedCmdId] = useState(null);
     const [feedbackText, setFeedbackText] = useState("");
+    const [simulating, setSimulating] = useState(false);
 
     useEffect(() => {
         // Fetch existing logs on initial load
         fetch(`${BASE_URL}/api/agent/actions`)
             .then(res => res.json())
-            .then(data => setActions(data))
-            .catch(err => console.error("API Fetch Error:", err));
+            .then(data => {
+                if (data && data.length > 0) {
+                    setActions(data);
+                } else {
+                    setActions(FALLBACK_LOGS);
+                }
+            })
+            .catch(err => {
+                console.error("API Fetch Error:", err);
+                setActions(FALLBACK_LOGS);
+            });
 
         // STOMP WebSocket Connection
         const stompClient = new Client({
@@ -41,6 +71,28 @@ const AgentDashboard = () => {
         return () => stompClient.deactivate();
     }, []);
 
+    // Send Simulation Request from UI
+    const triggerSimulation = async () => {
+        setSimulating(true);
+        const randomId = `CMD_${Math.floor(200 + Math.random() * 800)}`;
+        try {
+            await fetch(`${BASE_URL}/api/agent/intercept`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    commandId: randomId,
+                    agentName: "Codex-DB-Agent",
+                    command: "DROP TABLE users;",
+                    riskScore: 90
+                })
+            });
+        } catch (err) {
+            console.error("Simulation Trigger Error:", err);
+        } finally {
+            setSimulating(false);
+        }
+    };
+
     // Send Approval or Rejection with Feedback
     const submitDecision = (commandId, decision, feedback = "") => {
         fetch(`${BASE_URL}/api/agent/decision`, {
@@ -59,7 +111,25 @@ const AgentDashboard = () => {
 
     return (
         <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
-            <h2>🛡️ Agent Lock - Live Supervisor Dashboard</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h2 style={{ margin: 0 }}>🛡️ Agent Lock - Live Supervisor Dashboard</h2>
+                <button
+                    onClick={triggerSimulation}
+                    disabled={simulating}
+                    style={{
+                        padding: '10px 16px',
+                        background: '#0066cc',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold'
+                    }}
+                >
+                    {simulating ? "Triggering..." : "⚡ Simulate High-Risk Action"}
+                </button>
+            </div>
+
             <table border="1" cellPadding="10" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                     <tr style={{ background: '#f2f2f2' }}>
@@ -81,7 +151,17 @@ const AgentDashboard = () => {
                             <td style={{ color: act.riskScore > 40 ? 'red' : 'green', fontWeight: 'bold' }}>
                                 {act.riskScore}
                             </td>
-                            <td><strong>{act.status}</strong></td>
+                            <td>
+                                <span style={{
+                                    padding: '4px 8px',
+                                    borderRadius: '4px',
+                                    background: act.status === 'PAUSED' ? '#fff3cd' : act.status === 'APPROVED' ? '#d4edda' : '#f8d7da',
+                                    color: act.status === 'PAUSED' ? '#856404' : act.status === 'APPROVED' ? '#155724' : '#721c24',
+                                    fontWeight: 'bold'
+                                }}>
+                                    {act.status}
+                                </span>
+                            </td>
                             <td style={{ fontStyle: 'italic', color: '#555' }}>
                                 {act.feedbackPrompt || "—"}
                             </td>
@@ -90,12 +170,12 @@ const AgentDashboard = () => {
                                     <>
                                         <button 
                                             onClick={() => submitDecision(act.commandId, 'APPROVED')} 
-                                            style={{ marginRight: '5px', background: 'green', color: 'white', cursor: 'pointer' }}>
+                                            style={{ marginRight: '5px', background: 'green', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }}>
                                             Approve
                                         </button>
                                         <button 
                                             onClick={() => setSelectedCmdId(act.commandId)} 
-                                            style={{ background: 'red', color: 'white', cursor: 'pointer' }}>
+                                            style={{ background: 'red', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' }}>
                                             Reject...
                                         </button>
                                     </>
@@ -127,7 +207,7 @@ const AgentDashboard = () => {
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                             <button onClick={() => setSelectedCmdId(null)}>Cancel</button>
                             <button 
-                                style={{ background: 'red', color: 'white' }}
+                                style={{ background: 'red', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}
                                 onClick={() => submitDecision(selectedCmdId, 'REJECTED', feedbackText)}>
                                 Submit Rejection
                             </button>

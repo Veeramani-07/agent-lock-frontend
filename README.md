@@ -11,6 +11,12 @@
 
 ---
 
+## 🎬 Live System Architecture Demo
+
+![Agent-Lock Live Interceptor Demo](assets/demo.gif)
+
+---
+
 ## ⚙️ Architecture & Data Flow
 
 ```text
